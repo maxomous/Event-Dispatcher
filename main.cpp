@@ -35,72 +35,34 @@ struct EventData_MouseScroll
     double OffsetY;
 };
    
-template<typename T_Data>
-class Event
-{
-public:
-    Event(T_Data data) 
-        : m_Data(data)
-    {}
-    T_Data Data() { return m_Data; }
-private:
-    T_Data m_Data;
-};
-
-template<typename T_Data>
-class EventHandler
-{
-public:
-    EventHandler(const function<void(T_Data data)>& callback) 
-        : m_Callback(callback)
-    {}
-    void Call(T_Data data) { m_Callback(data); }
-    
-private:
-    const function<void(T_Data data)>& m_Callback;
-};
-
 // EventDispatcher singleton
 template<typename T_Data>
 class EventDispatcher
 {
 public:
-    static void RegisterHandler(const function<void(T_Data data)>& callback)
+    static void RegisterHandler(const function<void(T_Data data)>& eventHandler)
     {
-        EventHandler<T_Data> handler(callback);    
-        get().Impl_RegisterHandler(handler);
+        get().m_EventHandlers.push_back(eventHandler);
     }
-    
-    static void Dispatch(T_Data data)
+    static void Dispatch(T_Data newEvent) 
     {        
-        Event<T_Data> newEvent(data);
-        get().Impl_Dispatch(newEvent);
-    }
-    
-private:
-    vector<EventHandler<T_Data>> m_EventHandlers;
-    
-    static void Impl_RegisterHandler(EventHandler<T_Data> handler)
-    {
-        get().m_EventHandlers.push_back(handler);
-    }
-    static void Impl_Dispatch(Event<T_Data> newEvent)
-    {        
-        for(EventHandler<T_Data> handler : get().m_EventHandlers) {
-            handler.Call(newEvent.Data());
+        for(const function<void(T_Data)>& eventHandler : get().m_EventHandlers) {
+            eventHandler(newEvent);
         }
     }
-    static EventDispatcher& get() {
+private:
+    vector<function<void(T_Data)>> m_EventHandlers;
+    
+    static EventDispatcher& get() 
+    {
 		static EventDispatcher instance;
-		return instance;
+        return instance;
     }
     // delete constructor / copy constructor / assignment operator
     EventDispatcher() {}
     EventDispatcher(const EventDispatcher&) = delete;
     EventDispatcher& operator= (const EventDispatcher&) = delete;
 };
-
-
 
 
 int main()
